@@ -1,0 +1,21 @@
+# Gradle
+.gradle/
+build/
+app/build/
+
+# Локальная конфигурация (путь к Android SDK и т.п.)
+local.properties
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Сборочные артефакты
+*.apk
+*.aab
+*.ap_
+
+# OS
+.DS_Store
+Thumbs.db
