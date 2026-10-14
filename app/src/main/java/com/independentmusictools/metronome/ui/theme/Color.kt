@@ -12,3 +12,13 @@ val Teal = Color(0xFF2F6B6A)
 val PetrolDark = Color(0xFF1E4A50)
 val Vermilion = Color(0xFFC8452C)
 val Hairline = Color(0xFFD8D2C2)
+
+// Тёмная палитра — инверсия нейтральных, акценты осветлены (как в tuner).
+val NightBg = Color(0xFF151513)
+val NightPanel = Color(0xFF1E1E1B)
+val NightText = Color(0xFFEFEADF)
+val NightTextMuted = Color(0xFFA8A79D)
+val TealLight = Color(0xFF6FB5B3)
+val PetrolLight = Color(0xFF8CC8C6)
+val VermilionLight = Color(0xFFE4734F)
+val NightHairline = Color(0xFF3A3934)

@@ -16,4 +16,7 @@ interface MetronomePlayer {
 
     /** Одноразовое прослушивание звука (пара: сильная + обычная доля). */
     fun preview(sound: ClickSynthesizer.Sound)
+
+    /** Короткий щелчок-отклик при тапе по цифрам темпа. */
+    fun tapClick()
 }

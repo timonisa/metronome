@@ -20,11 +20,13 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -41,6 +43,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
@@ -48,21 +51,21 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.independentmusictools.metronome.R
 import com.independentmusictools.metronome.audio.ClickSynthesizer
 import com.independentmusictools.metronome.core.TempoMath
 import com.independentmusictools.metronome.state.MetronomeViewModel
-import com.independentmusictools.metronome.ui.theme.CharcoalMuted
-import com.independentmusictools.metronome.ui.theme.Hairline
-import com.independentmusictools.metronome.ui.theme.Teal
-import com.independentmusictools.metronome.ui.theme.Vermilion
 import kotlin.math.roundToInt
 
 /**
- * Главный экран метронома: темп (цифры с TAP по нажатию, слайдер, ±5),
- * удары в такте 1–8 (первый удар выше звуком), звук, старт/стоп.
+ * Главный экран метронома: звук (вверху), темп (по центру: цифры с TAP
+ * по нажатию, слайдер, ±5), удары в такте 1–8 и старт/стоп.
  */
 @Composable
-fun MetronomeScreen(viewModel: MetronomeViewModel) {
+fun MetronomeScreen(
+    viewModel: MetronomeViewModel,
+    onOpenSettings: () -> Unit,
+) {
     val state by viewModel.state.collectAsState()
 
     // Вспышка цифр темпа при каждом тапе: плавно гаснет от светлого к обычному.
@@ -81,30 +84,48 @@ fun MetronomeScreen(viewModel: MetronomeViewModel) {
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState()),
-            contentAlignment = Alignment.Center,
         ) {
+            // Шестерёнка — переход в настройки (верхний правый угол).
+            IconButton(
+                onClick = onOpenSettings,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(top = 8.dp, end = 8.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Settings,
+                    contentDescription = stringResource(R.string.settings_cd),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
             Column(
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .padding(horizontal = 24.dp, vertical = 48.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 // Звук — в самом верху; выбор = прослушивание примера
+                val soundOptions = ClickSynthesizer.Sound.entries.map { it to soundLabel(it) }
                 LabeledChips(
-                    label = "ЗВУК · нажмите для примера",
-                    options = ClickSynthesizer.Sound.entries.map { it.label },
-                    selected = state.sound.label,
+                    label = stringResource(R.string.sound_section),
+                    options = soundOptions.map { it.second },
+                    selected = soundLabel(state.sound),
                 ) { label ->
-                    ClickSynthesizer.Sound.entries.firstOrNull { it.label == label }
-                        ?.let { viewModel.selectSound(it, preview = true) }
+                    soundOptions.firstOrNull { it.second == label }
+                        ?.first?.let { viewModel.selectSound(it, preview = true) }
                 }
 
-                Spacer(Modifier.height(28.dp))
+                Spacer(Modifier.height(44.dp))
 
-                // Темп: −5 · цифры (TAP по нажатию со вспышкой) · +5
+                // Темп: −5 · цифры (TAP по нажатию со вспышкой и щелчком) · +5
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(20.dp),
                 ) {
-                    StepButton("−5") { viewModel.adjustBpm(-5) }
+                    val stepCd = stringResource(R.string.bpm_step_cd, "−5")
+                    StepButton("−5", stepCd) { viewModel.adjustBpm(-5) }
+                    val tapCd = stringResource(R.string.tap_cd)
                     Text(
                         text = "${state.bpm}",
                         style = TextStyle(
@@ -119,43 +140,50 @@ fun MetronomeScreen(viewModel: MetronomeViewModel) {
                         ),
                         modifier = Modifier
                             .clickable { viewModel.tapTempo() }
-                            .semantics { contentDescription = "Тап-темпо: нажмите на цифры темпа" },
+                            .semantics { contentDescription = tapCd },
                     )
-                    StepButton("+5") { viewModel.adjustBpm(5) }
+                    val stepCdPlus = stringResource(R.string.bpm_step_cd, "+5")
+                    StepButton("+5", stepCdPlus) { viewModel.adjustBpm(5) }
                 }
                 Text(
-                    "BPM · ударов в минуту · тап по цифрам = TAP",
+                    stringResource(R.string.bpm_hint),
                     style = MaterialTheme.typography.labelSmall,
-                    color = CharcoalMuted,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
 
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(16.dp))
 
                 // Точный регулятор темпа — слайдер
+                val sliderCd = stringResource(R.string.bpm_slider_cd)
                 Slider(
                     value = state.bpm.toFloat(),
                     onValueChange = { viewModel.setBpm(it.roundToInt()) },
                     valueRange = TempoMath.MIN_BPM.toFloat()..TempoMath.MAX_BPM.toFloat(),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .semantics { contentDescription = "Регулятор темпа" },
+                        .semantics { contentDescription = sliderCd },
                     colors = SliderDefaults.colors(
-                        thumbColor = Teal,
-                        activeTrackColor = Teal,
-                        inactiveTrackColor = Hairline,
+                        thumbColor = MaterialTheme.colorScheme.primary,
+                        activeTrackColor = MaterialTheme.colorScheme.primary,
+                        inactiveTrackColor = MaterialTheme.colorScheme.outline,
                     ),
                 )
 
-                Spacer(Modifier.height(24.dp))
+                Spacer(Modifier.height(40.dp))
 
                 // Ударов в такте (1–8); первый удар такта звучит выше
-                Text("УДАРОВ В ТАКТЕ", style = MaterialTheme.typography.labelSmall, color = CharcoalMuted)
-                Spacer(Modifier.height(6.dp))
+                Text(
+                    stringResource(R.string.beats_section),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(10.dp))
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
-                    SmallStepButton("−", "Уменьшить количество ударов в такте") { viewModel.adjustBeatsPerBar(-1) }
+                    val lowerCd = stringResource(R.string.beats_lower_cd)
+                    SmallStepButton("−", lowerCd) { viewModel.adjustBeatsPerBar(-1) }
                     Text(
                         text = "${state.beatsPerBar}",
                         style = TextStyle(
@@ -164,28 +192,36 @@ fun MetronomeScreen(viewModel: MetronomeViewModel) {
                             fontFeatureSettings = "tnum",
                         ),
                     )
-                    SmallStepButton("+", "Увеличить количество ударов в такте") { viewModel.adjustBeatsPerBar(1) }
+                    val raiseCd = stringResource(R.string.beats_raise_cd)
+                    SmallStepButton("+", raiseCd) { viewModel.adjustBeatsPerBar(1) }
                 }
-                Spacer(Modifier.height(6.dp))
+                Spacer(Modifier.height(10.dp))
                 Text(
-                    text = "Первый удар такта — выше звуком",
+                    text = stringResource(R.string.beats_hint),
                     fontSize = 11.sp,
-                    color = CharcoalMuted,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
                 )
 
-                Spacer(Modifier.height(24.dp))
+                Spacer(Modifier.height(40.dp))
 
                 // Старт/стоп
+                val playCd = if (state.playing) {
+                    stringResource(R.string.stop_cd)
+                } else {
+                    stringResource(R.string.start_cd)
+                }
                 FilledIconButton(
                     onClick = viewModel::toggle,
                     modifier = Modifier
                         .size(76.dp)
-                        .semantics {
-                            contentDescription = if (state.playing) "Остановить метроном" else "Запустить метроном"
-                        },
+                        .semantics { contentDescription = playCd },
                     colors = IconButtonDefaults.iconButtonColors(
-                        containerColor = if (state.playing) Vermilion else MaterialTheme.colorScheme.primary,
+                        containerColor = if (state.playing) {
+                            MaterialTheme.colorScheme.tertiary
+                        } else {
+                            MaterialTheme.colorScheme.primary
+                        },
                     ),
                 ) {
                     Icon(
@@ -194,11 +230,11 @@ fun MetronomeScreen(viewModel: MetronomeViewModel) {
                         tint = MaterialTheme.colorScheme.onPrimary,
                     )
                 }
-                Spacer(Modifier.height(6.dp))
+                Spacer(Modifier.height(10.dp))
                 Text(
-                    "Воспроизведение останавливается при сворачивании приложения",
+                    stringResource(R.string.background_stop_note),
                     fontSize = 10.sp,
-                    color = CharcoalMuted,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
                 )
             }
@@ -206,13 +242,24 @@ fun MetronomeScreen(viewModel: MetronomeViewModel) {
     }
 }
 
+/** Локализованное имя звука. */
 @Composable
-private fun StepButton(label: String, onClick: () -> Unit) {
+private fun soundLabel(sound: ClickSynthesizer.Sound): String = stringResource(
+    when (sound) {
+        ClickSynthesizer.Sound.WOOD -> R.string.sound_wood
+        ClickSynthesizer.Sound.TICK -> R.string.sound_tick
+        ClickSynthesizer.Sound.PULSE -> R.string.sound_pulse
+        ClickSynthesizer.Sound.MECH -> R.string.sound_mech
+    },
+)
+
+@Composable
+private fun StepButton(label: String, description: String, onClick: () -> Unit) {
     OutlinedButton(
         onClick = onClick,
         modifier = Modifier
             .widthIn(min = 52.dp)
-            .semantics { contentDescription = "Кнопка $label" },
+            .semantics { contentDescription = description },
         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
     ) {
         Text(label, fontSize = 15.sp, fontWeight = FontWeight.Medium)
@@ -240,8 +287,12 @@ private fun LabeledChips(
     onSelect: (String) -> Unit,
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(label, style = MaterialTheme.typography.labelSmall, color = CharcoalMuted)
-        Spacer(Modifier.height(6.dp))
+        Text(
+            label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.height(8.dp))
         Row(
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             modifier = Modifier.horizontalScroll(rememberScrollState()),

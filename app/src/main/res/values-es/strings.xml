@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Metrónomo</string>
+
+    <string name="sound_section">SONIDO · toca para escuchar</string>
+    <string name="sound_wood">Madera</string>
+    <string name="sound_tick">Tic</string>
+    <string name="sound_pulse">Pulso</string>
+    <string name="sound_mech">Mecánico</string>
+
+    <string name="bpm_hint">BPM · pulsaciones por minuto · toca los números para TAP</string>
+    <string name="tap_cd">Tap tempo: pulsa los números de tempo</string>
+    <string name="bpm_step_cd">Botón %1$s</string>
+    <string name="bpm_slider_cd">Control de tempo</string>
+
+    <string name="beats_section">PULSOS POR COMPÁS</string>
+    <string name="beats_lower_cd">Menos pulsos por compás</string>
+    <string name="beats_raise_cd">Más pulsos por compás</string>
+    <string name="beats_hint">El primer pulso del compás suena más agudo</string>
+
+    <string name="start_cd">Iniciar metrónomo</string>
+    <string name="stop_cd">Detener metrónomo</string>
+    <string name="background_stop_note">La reproducción se detiene al minimizar la aplicación</string>
+
+    <string name="settings_cd">Ajustes</string>
+    <string name="back_cd">Atrás</string>
+    <string name="settings_title">Ajustes</string>
+    <string name="settings_theme">Tema</string>
+    <string name="theme_light">Claro</string>
+    <string name="theme_dark">Oscuro</string>
+    <string name="settings_language">Idioma</string>
+</resources>

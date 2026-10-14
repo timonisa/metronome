@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Metronome</string>
+
+    <string name="sound_section">SOUND · tap to preview</string>
+    <string name="sound_wood">Wood</string>
+    <string name="sound_tick">Tick</string>
+    <string name="sound_pulse">Pulse</string>
+    <string name="sound_mech">Mechanical</string>
+
+    <string name="bpm_hint">BPM · beats per minute · tap the digits for TAP</string>
+    <string name="tap_cd">Tap tempo: press the tempo digits</string>
+    <string name="bpm_step_cd">Button %1$s</string>
+    <string name="bpm_slider_cd">Tempo slider</string>
+
+    <string name="beats_section">BEATS PER BAR</string>
+    <string name="beats_lower_cd">Fewer beats per bar</string>
+    <string name="beats_raise_cd">More beats per bar</string>
+    <string name="beats_hint">The first beat of the bar sounds higher</string>
+
+    <string name="start_cd">Start metronome</string>
+    <string name="stop_cd">Stop metronome</string>
+    <string name="background_stop_note">Playback stops when the app is minimized</string>
+
+    <string name="settings_cd">Settings</string>
+    <string name="back_cd">Back</string>
+    <string name="settings_title">Settings</string>
+    <string name="settings_theme">Theme</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="settings_language">Language</string>
+</resources>

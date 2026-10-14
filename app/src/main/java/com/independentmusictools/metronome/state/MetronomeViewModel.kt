@@ -105,8 +105,10 @@ class MetronomeViewModel(
         if (preview) player.preview(sound)
     }
 
-    /** Tap tempo: усреднение интервалов тапов; false — пока недостаточно тапов. */
+    /** Tap tempo: усреднение интервалов тапов; false — пока недостаточно тапов.
+     *  Каждый тап даёт щелчок-отклик выбранным звуком. */
     fun tapTempo(): Boolean {
+        player.tapClick()
         val bpm = tapper.tap() ?: run {
             _state.value = _state.value.copy(tapCount = _state.value.tapCount + 1)
             return false

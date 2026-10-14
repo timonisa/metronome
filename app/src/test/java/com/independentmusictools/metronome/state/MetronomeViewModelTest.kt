@@ -19,10 +19,12 @@ class MetronomeViewModelTest {
         var started = 0
         var stopped = 0
         var previews = 0
+        var tapClicks = 0
         override val isRunning: Boolean get() = started > stopped
         override fun start() { started++ }
         override fun stop() { stopped++ }
         override fun preview(sound: ClickSynthesizer.Sound) { previews++ }
+        override fun tapClick() { tapClicks++ }
         lateinit var onInterrupted: () -> Unit
     }
 
@@ -169,10 +171,11 @@ class MetronomeViewModelTest {
     }
 
     @Test
-    fun `every tap increments tapCount for the flash`() {
+    fun `every tap increments tapCount for the flash and plays click feedback`() {
         var clock = 0L
         val tapper = TapAverager(now = { clock })
-        val vm = viewModel(FakePlayer(), tapper = tapper)
+        val fake = FakePlayer()
+        val vm = viewModel(fake, tapper = tapper)
         vm.tapTempo()
         assertEquals(1, vm.state.value.tapCount)
         clock = 500
@@ -181,6 +184,7 @@ class MetronomeViewModelTest {
         vm.tapTempo() // интервалы по 500 мс → 120 BPM
         assertEquals(3, vm.state.value.tapCount)
         assertEquals(120, vm.state.value.bpm)
+        assertEquals(3, fake.tapClicks)
     }
 
     @Test

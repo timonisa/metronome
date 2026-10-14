@@ -1,4 +1,37 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Метроном</string>
+
+    <!-- Звук -->
+    <string name="sound_section">ЗВУК · нажмите для примера</string>
+    <string name="sound_wood">Дерево</string>
+    <string name="sound_tick">Тик</string>
+    <string name="sound_pulse">Импульс</string>
+    <string name="sound_mech">Механика</string>
+
+    <!-- Темп -->
+    <string name="bpm_hint">BPM · ударов в минуту · тап по цифрам = TAP</string>
+    <string name="tap_cd">Тап-темпо: нажмите на цифры темпа</string>
+    <string name="bpm_step_cd">Кнопка %1$s</string>
+    <string name="bpm_slider_cd">Регулятор темпа</string>
+
+    <!-- Такт -->
+    <string name="beats_section">УДАРОВ В ТАКТЕ</string>
+    <string name="beats_lower_cd">Уменьшить количество ударов в такте</string>
+    <string name="beats_raise_cd">Увеличить количество ударов в такте</string>
+    <string name="beats_hint">Первый удар такта — выше звуком</string>
+
+    <!-- Воспроизведение -->
+    <string name="start_cd">Запустить метроном</string>
+    <string name="stop_cd">Остановить метроном</string>
+    <string name="background_stop_note">Воспроизведение останавливается при сворачивании приложения</string>
+
+    <!-- Настройки -->
+    <string name="settings_cd">Настройки</string>
+    <string name="back_cd">Назад</string>
+    <string name="settings_title">Настройки</string>
+    <string name="settings_theme">Тема</string>
+    <string name="theme_light">Светлая</string>
+    <string name="theme_dark">Тёмная</string>
+    <string name="settings_language">Язык</string>
 </resources>

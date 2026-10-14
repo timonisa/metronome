@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Metronom</string>
+
+    <string name="sound_section">KLANG · zum Probehören tippen</string>
+    <string name="sound_wood">Holz</string>
+    <string name="sound_tick">Tick</string>
+    <string name="sound_pulse">Impuls</string>
+    <string name="sound_mech">Mechanisch</string>
+
+    <string name="bpm_hint">BPM · Schläge pro Minute · Zahlen antippen für TAP</string>
+    <string name="tap_cd">Tap-Tempo: Tippen Sie auf die Tempo-Zahlen</string>
+    <string name="bpm_step_cd">Taste %1$s</string>
+    <string name="bpm_slider_cd">Tempo-Regler</string>
+
+    <string name="beats_section">SCHLÄGE PRO TAKT</string>
+    <string name="beats_lower_cd">Weniger Schläge pro Takt</string>
+    <string name="beats_raise_cd">Mehr Schläge pro Takt</string>
+    <string name="beats_hint">Der erste Schlag des Takts klingt höher</string>
+
+    <string name="start_cd">Metronom starten</string>
+    <string name="stop_cd">Metronom anhalten</string>
+    <string name="background_stop_note">Die Wiedergabe stoppt, wenn die App minimiert wird</string>
+
+    <string name="settings_cd">Einstellungen</string>
+    <string name="back_cd">Zurück</string>
+    <string name="settings_title">Einstellungen</string>
+    <string name="settings_theme">Design</string>
+    <string name="theme_light">Hell</string>
+    <string name="theme_dark">Dunkel</string>
+    <string name="settings_language">Sprache</string>
+</resources>

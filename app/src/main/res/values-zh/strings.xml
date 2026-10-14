@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">节拍器</string>
+
+    <string name="sound_section">音色 · 点击试听</string>
+    <string name="sound_wood">木鱼</string>
+    <string name="sound_tick">滴答</string>
+    <string name="sound_pulse">脉冲</string>
+    <string name="sound_mech">机械</string>
+
+    <string name="bpm_hint">BPM · 每分钟拍数 · 点击数字即为 TAP</string>
+    <string name="tap_cd">击打定速：点击 tempo 数字</string>
+    <string name="bpm_step_cd">按钮 %1$s</string>
+    <string name="bpm_slider_cd">速度滑块</string>
+
+    <string name="beats_section">每小节拍数</string>
+    <string name="beats_lower_cd">减少每小节拍数</string>
+    <string name="beats_raise_cd">增加每小节拍数</string>
+    <string name="beats_hint">小节第一拍音调更高</string>
+
+    <string name="start_cd">启动节拍器</string>
+    <string name="stop_cd">停止节拍器</string>
+    <string name="background_stop_note">应用最小化时播放将停止</string>
+
+    <string name="settings_cd">设置</string>
+    <string name="back_cd">返回</string>
+    <string name="settings_title">设置</string>
+    <string name="settings_theme">主题</string>
+    <string name="theme_light">浅色</string>
+    <string name="theme_dark">深色</string>
+    <string name="settings_language">语言</string>
+</resources>
