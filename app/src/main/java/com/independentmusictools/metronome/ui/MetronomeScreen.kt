@@ -49,7 +49,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.independentmusictools.metronome.audio.ClickSynthesizer
 import com.independentmusictools.metronome.core.TempoMath
-import com.independentmusictools.metronome.core.TimeSignature
 import com.independentmusictools.metronome.state.MetronomeViewModel
 import com.independentmusictools.metronome.ui.theme.CharcoalMuted
 import com.independentmusictools.metronome.ui.theme.Hairline
@@ -59,7 +58,7 @@ import kotlin.math.roundToInt
 
 /**
  * Главный экран метронома: темп (цифры с TAP по нажатию, слайдер, ±5),
- * размер такта с вариантами группировки, звук, старт/стоп.
+ * удары в такте 1–8 (первый удар выше звуком), звук, старт/стоп.
  */
 @Composable
 fun MetronomeScreen(viewModel: MetronomeViewModel) {
@@ -134,31 +133,31 @@ fun MetronomeScreen(viewModel: MetronomeViewModel) {
 
             Spacer(Modifier.height(28.dp))
 
-            // Размер такта (акцентные группировки)
-            LabeledChips(
-                label = "РАЗМЕР · акценты",
-                options = TimeSignature.ALL.map { it.label },
-                selected = state.timeSignature.label,
-            ) { label ->
-                TimeSignature.parse(label)?.let { viewModel.setTimeSignature(it) }
+            // Ударов в такте (1–8); первый удар такта звучит выше
+            Text("УДАРОВ В ТАКТЕ", style = MaterialTheme.typography.labelSmall, color = CharcoalMuted)
+            Spacer(Modifier.height(6.dp))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                SmallStepButton("−", "Уменьшить количество ударов в такте") { viewModel.adjustBeatsPerBar(-1) }
+                Text(
+                    text = "${state.beatsPerBar}",
+                    style = TextStyle(
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Medium,
+                        fontFeatureSettings = "tnum",
+                    ),
+                )
+                SmallStepButton("+", "Увеличить количество ударов в такте") { viewModel.adjustBeatsPerBar(1) }
             }
-
-            // Вариант группировки — только если у размера есть альтернативы
-            val variants = TimeSignature.variantsFor(
-                state.timeSignature.numerator,
-                state.timeSignature.denominator,
+            Spacer(Modifier.height(6.dp))
+            Text(
+                text = "Первый удар такта — выше звуком",
+                fontSize = 11.sp,
+                color = CharcoalMuted,
+                textAlign = TextAlign.Center,
             )
-            if (variants.size > 1) {
-                Spacer(Modifier.height(10.dp))
-                LabeledChips(
-                    label = "ГРУППИРОВКА · порядок долей",
-                    options = variants.map { it.variantLabel },
-                    selected = state.timeSignature.variantLabel,
-                ) { variant ->
-                    variants.firstOrNull { it.variantLabel == variant }
-                        ?.let { viewModel.setTimeSignature(it) }
-                }
-            }
 
             Spacer(Modifier.height(16.dp))
 
@@ -214,6 +213,19 @@ private fun StepButton(label: String, onClick: () -> Unit) {
         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
     ) {
         Text(label, fontSize = 15.sp, fontWeight = FontWeight.Medium)
+    }
+}
+
+@Composable
+private fun SmallStepButton(symbol: String, description: String, onClick: () -> Unit) {
+    OutlinedButton(
+        onClick = onClick,
+        modifier = Modifier
+            .widthIn(min = 48.dp)
+            .semantics { contentDescription = description },
+        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
+    ) {
+        Text(symbol, fontSize = 18.sp, fontWeight = FontWeight.Medium)
     }
 }
 

@@ -17,7 +17,6 @@ import androidx.core.content.ContextCompat
 import com.independentmusictools.metronome.core.AccentLevel
 import com.independentmusictools.metronome.core.BeatPlacer
 import com.independentmusictools.metronome.core.TempoMath
-import com.independentmusictools.metronome.core.TimeSignature
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 
@@ -36,14 +35,15 @@ import java.util.concurrent.atomic.AtomicLong
  * ACTION_AUDIO_BECOMING_NOISY (отключение наушников → остановка).
  */
 class AudioTrackMetronomePlayer(
-    @Suppress("unused") private val context: Context,
+    private val context: Context,
     private val onInterrupted: () -> Unit,
 ) : MetronomePlayer {
 
     override var bpm: Int = 100
         set(value) { field = value.coerceIn(TempoMath.MIN_BPM, TempoMath.MAX_BPM) }
 
-    override var timeSignature: TimeSignature = TimeSignature.DEFAULT
+    override var beatsPerBar: Int = 4
+        set(value) { field = value.coerceIn(MIN_BEATS_PER_BAR, MAX_BEATS_PER_BAR) }
 
     override var sound: ClickSynthesizer.Sound = ClickSynthesizer.Sound.WOOD
 
@@ -150,12 +150,10 @@ class AudioTrackMetronomePlayer(
                 SAMPLE_RATE * 60.0 / bpm,
                 4, // параметр beatsPerBar влияет только на флаг PlacedBeat.isDownbeat, движком не используется
             )
-            val ts = timeSignature
+            val bpb = beatsPerBar.coerceIn(MIN_BEATS_PER_BAR, MAX_BEATS_PER_BAR)
             val snd = sound
-            val bar = ts.numerator
             for (b in placed) {
-                val posInBar = (b.beatIndex % bar).toInt()
-                val level = ts.accentAt(posInBar, bar)
+                val level = if (b.beatIndex % bpb == 0L) AccentLevel.STRONG else AccentLevel.WEAK
                 val click = clickFor(snd, level)
                 mixer.mix(b.offsetInWindow.toInt(), click)
             }
@@ -186,6 +184,7 @@ class AudioTrackMetronomePlayer(
 
     @Synchronized
     private fun clickFor(sound: ClickSynthesizer.Sound, level: AccentLevel): ShortArray {
+        if (!sound.synthesized) return SampleClicks.click(context, level)
         var c = clickCache[sound.ordinal][level.ordinal]
         if (c == null) {
             c = ClickSynthesizer.synthesize(sound, level, SAMPLE_RATE)
@@ -270,5 +269,8 @@ class AudioTrackMetronomePlayer(
 
         /** Окно ~50 мс при 44,1 кГц. */
         const val SAMPLES_PER_WINDOW = 2205
+
+        const val MIN_BEATS_PER_BAR = 1
+        const val MAX_BEATS_PER_BAR = 8
     }
 }

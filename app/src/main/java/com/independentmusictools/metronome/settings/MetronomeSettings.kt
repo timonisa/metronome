@@ -3,7 +3,6 @@ package com.independentmusictools.metronome.settings
 import android.content.Context
 import com.independentmusictools.metronome.audio.ClickSynthesizer
 import com.independentmusictools.metronome.core.TempoMath
-import com.independentmusictools.metronome.core.TimeSignature
 
 /**
  * Минимальный интерфейс хранилища настроек: реальная реализация —
@@ -26,7 +25,8 @@ class SharedPrefsPrefs(context: Context) : Prefs {
 
 /**
  * Локальные настройки метронома (только это устройство).
- * Темп, размер, звук — независимые настройки, не перезаписывающие друг друга.
+ * Темп, удары в такте, звук — независимые настройки, не перезаписывающие
+ * друг друга.
  */
 class MetronomeSettings(private val prefs: Prefs) {
 
@@ -34,10 +34,9 @@ class MetronomeSettings(private val prefs: Prefs) {
         get() = prefs.getInt(KEY_BPM, DEFAULT_BPM).coerceIn(TempoMath.MIN_BPM, TempoMath.MAX_BPM)
         set(value) = prefs.putInt(KEY_BPM, value.coerceIn(TempoMath.MIN_BPM, TempoMath.MAX_BPM))
 
-    var timeSignature: TimeSignature
-        get() = TimeSignature.parse(prefs.getString(KEY_TS, null) ?: TimeSignature.DEFAULT.persistString)
-            ?: TimeSignature.DEFAULT
-        set(value) = prefs.putString(KEY_TS, value.persistString)
+    var beatsPerBar: Int
+        get() = prefs.getInt(KEY_BEATS, DEFAULT_BEATS).coerceIn(MIN_BEATS_PER_BAR, MAX_BEATS_PER_BAR)
+        set(value) = prefs.putInt(KEY_BEATS, value.coerceIn(MIN_BEATS_PER_BAR, MAX_BEATS_PER_BAR))
 
     var sound: ClickSynthesizer.Sound
         get() = prefs.getString(KEY_SOUND, null)
@@ -46,10 +45,13 @@ class MetronomeSettings(private val prefs: Prefs) {
         set(value) = prefs.putString(KEY_SOUND, value.name)
 
     companion object {
+        const val MIN_BEATS_PER_BAR = 1
+        const val MAX_BEATS_PER_BAR = 8
         const val DEFAULT_BPM = 100
+        const val DEFAULT_BEATS = 4
 
         private const val KEY_BPM = "bpm"
-        private const val KEY_TS = "time_signature"
+        private const val KEY_BEATS = "beats_per_bar"
         private const val KEY_SOUND = "sound"
     }
 }

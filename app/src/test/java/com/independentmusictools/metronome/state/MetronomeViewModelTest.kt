@@ -3,7 +3,6 @@ package com.independentmusictools.metronome.state
 import com.independentmusictools.metronome.audio.ClickSynthesizer
 import com.independentmusictools.metronome.audio.MetronomePlayer
 import com.independentmusictools.metronome.core.TapAverager
-import com.independentmusictools.metronome.core.TimeSignature
 import com.independentmusictools.metronome.settings.MetronomeSettings
 import com.independentmusictools.metronome.settings.Prefs
 import org.junit.Assert.assertEquals
@@ -15,7 +14,7 @@ class MetronomeViewModelTest {
 
     private class FakePlayer : MetronomePlayer {
         override var bpm: Int = 0
-        override var timeSignature: TimeSignature = TimeSignature.DEFAULT
+        override var beatsPerBar: Int = 0
         override var sound: ClickSynthesizer.Sound = ClickSynthesizer.Sound.WOOD
         var started = 0
         var stopped = 0
@@ -52,7 +51,7 @@ class MetronomeViewModelTest {
     fun `initial state comes from settings defaults`() {
         val vm = viewModel(FakePlayer())
         assertEquals(100, vm.state.value.bpm)
-        assertEquals(TimeSignature.FOUR_FOUR, vm.state.value.timeSignature)
+        assertEquals(4, vm.state.value.beatsPerBar)
         assertEquals(ClickSynthesizer.Sound.WOOD, vm.state.value.sound)
         assertFalse(vm.state.value.playing)
         assertEquals(0, vm.state.value.tapCount)
@@ -115,26 +114,33 @@ class MetronomeViewModelTest {
     }
 
     @Test
-    fun `time signature persists`() {
-        val prefs = MapPrefs()
-        val vm = viewModel(FakePlayer(), prefs)
-        vm.setTimeSignature(TimeSignature.SEVEN_EIGHT)
-        assertEquals(TimeSignature.SEVEN_EIGHT, vm.state.value.timeSignature)
-        val reloaded = viewModel(FakePlayer(), prefs)
-        assertEquals(TimeSignature.SEVEN_EIGHT, reloaded.state.value.timeSignature)
-    }
-
-    @Test
-    fun `time signature variant persists and reaches the player`() {
+    fun `beats per bar clamps to 1-8 persists and reaches the player`() {
         val fake = FakePlayer()
         val prefs = MapPrefs()
         val vm = viewModel(fake, prefs)
-        val variant = TimeSignature.parse("5/4|2+3")!!
-        vm.setTimeSignature(variant)
-        assertEquals(variant, vm.state.value.timeSignature)
-        assertEquals(variant, fake.timeSignature)
-        // Новая VM с теми же настройками восстанавливает именно вариант
-        assertEquals(variant, viewModel(FakePlayer(), prefs).state.value.timeSignature)
+        vm.setBeatsPerBar(0)
+        assertEquals(1, vm.state.value.beatsPerBar)
+        vm.setBeatsPerBar(99)
+        assertEquals(8, vm.state.value.beatsPerBar)
+        vm.setBeatsPerBar(6)
+        assertEquals(6, fake.beatsPerBar)
+        // bpm не тронут, новое VM читает сохранённое значение
+        vm.setBpm(120)
+        val reloaded = viewModel(FakePlayer(), prefs)
+        assertEquals(6, reloaded.state.value.beatsPerBar)
+        assertEquals(120, reloaded.state.value.bpm)
+    }
+
+    @Test
+    fun `adjustBeatsPerBar steps by one`() {
+        val vm = viewModel(FakePlayer())
+        vm.setBeatsPerBar(4)
+        vm.adjustBeatsPerBar(1)
+        assertEquals(5, vm.state.value.beatsPerBar)
+        vm.adjustBeatsPerBar(-3)
+        assertEquals(2, vm.state.value.beatsPerBar)
+        vm.adjustBeatsPerBar(-5)
+        assertEquals(1, vm.state.value.beatsPerBar)
     }
 
     @Test
@@ -191,11 +197,11 @@ class MetronomeViewModelTest {
         val fake = FakePlayer()
         val vm = viewModel(fake)
         vm.setBpm(180)
-        vm.setTimeSignature(TimeSignature.SIX_EIGHT)
+        vm.setBeatsPerBar(7)
         vm.selectSound(ClickSynthesizer.Sound.TICK, preview = false)
         vm.toggle()
         assertEquals(180, fake.bpm)
-        assertEquals(TimeSignature.SIX_EIGHT, fake.timeSignature)
+        assertEquals(7, fake.beatsPerBar)
         assertEquals(ClickSynthesizer.Sound.TICK, fake.sound)
     }
 }

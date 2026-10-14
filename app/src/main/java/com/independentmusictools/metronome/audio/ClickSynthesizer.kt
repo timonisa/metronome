@@ -10,40 +10,46 @@ import kotlin.math.sqrt
 
 /**
  * Синтез щелчков метронома без внешних сэмплов — чистый Kotlin,
- * тестируется unit-тестами. Все звуки генерируются локально
+ * тестируется unit-тестами. Три звука генерируются локально
  * (затухающие синусы с парой частотных компонентов), поэтому
  * вопросов лицензий сэмплов нет.
+ *
+ * MECH — сэмпловый звук реального механического метронома
+ * (см. SampleClicks), синтезу не подлежит.
  *
  * Громкость нормализуется по RMS к целевому уровню для каждого акцента —
  * воспринимаемая громкость звуков сопоставима.
  */
 object ClickSynthesizer {
 
-    enum class Sound(val label: String) {
-        WOOD("Дерево"),   // короткий яркий щелчок дерева
+    enum class Sound(val label: String, val synthesized: Boolean = true) {
+        WOOD("Дерево"),   // короткий щелчок дерева
         TICK("Тик"),      // тёплый сухой механический тик
         PULSE("Импульс"), // резкий электронный пульс
+        MECH("Механика", synthesized = false), // сэмпл реального метронома
     }
 
     /**
      * Сгенерировать щелчок в PCM 16 бит.
      *
-     * @param level уровень акцента: STRONG выше частотой и громче MEDIUM/WEAK.
+     * @param level уровень акцента: STRONG выше частотой и громче WEAK.
      */
     fun synthesize(sound: Sound, level: AccentLevel, sampleRate: Int): ShortArray {
+        require(sound.synthesized) { "звук $sound сэмпловый — используйте SampleClicks" }
         val partials: List<Pair<Double, Double>> = when (sound) { // (частота Гц, вес)
-            Sound.WOOD -> listOf(1400.0 to 1.0, 3760.0 to 0.35)
-            Sound.TICK -> listOf(950.0 to 1.0, 1880.0 to 0.10)
-            Sound.PULSE -> listOf(2080.0 to 1.0, 3120.0 to 0.45)
+            Sound.WOOD -> listOf(850.0 to 1.0, 2300.0 to 0.30)
+            Sound.TICK -> listOf(700.0 to 1.0, 1400.0 to 0.10)
+            Sound.PULSE -> listOf(1450.0 to 1.0, 2200.0 to 0.45)
+            Sound.MECH -> error("недостижимо — проверено require выше")
         }
         val decaySec = when (sound) {
             Sound.WOOD -> 0.030
             Sound.TICK -> 0.020
             Sound.PULSE -> 0.026
+            Sound.MECH -> error("недостижимо — проверено require выше")
         }
         val targetRms = when (level) {
             AccentLevel.STRONG -> 0.30
-            AccentLevel.MEDIUM -> 0.24
             AccentLevel.WEAK -> 0.19
         }
         val freqScale = if (level == AccentLevel.STRONG) 1.22 else 1.0

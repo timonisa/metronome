@@ -30,7 +30,7 @@ class ClickSynthesizerTest {
 
     @Test
     fun `all sounds and accent levels produce non-silent output`() {
-        for (sound in ClickSynthesizer.Sound.entries) {
+        for (sound in ClickSynthesizer.Sound.entries.filter { it.synthesized }) {
             for (level in AccentLevel.entries) {
                 val c = ClickSynthesizer.synthesize(sound, level, rate)
                 assertTrue("$sound/$level тихий: rms=${rms(c)}", rms(c) > 0.05)
@@ -41,7 +41,7 @@ class ClickSynthesizerTest {
     @Test
     fun `perceived loudness is consistent across sounds`() {
         for (level in AccentLevel.entries) {
-            val rmsValues = ClickSynthesizer.Sound.entries
+            val rmsValues = ClickSynthesizer.Sound.entries.filter { it.synthesized }
                 .map { rms(ClickSynthesizer.synthesize(it, level, rate)) }
             val spread = rmsValues.max() - rmsValues.min()
             assertTrue("разброс громкости для $level: $spread", spread < 0.06)
@@ -50,7 +50,7 @@ class ClickSynthesizerTest {
 
     @Test
     fun `strong accent is louder than weak`() {
-        for (sound in ClickSynthesizer.Sound.entries) {
+        for (sound in ClickSynthesizer.Sound.entries.filter { it.synthesized }) {
             val strong = rms(ClickSynthesizer.synthesize(sound, AccentLevel.STRONG, rate))
             val weak = rms(ClickSynthesizer.synthesize(sound, AccentLevel.WEAK, rate))
             assertTrue("$sound: strong=$strong weak=$weak", strong > weak)
@@ -59,7 +59,7 @@ class ClickSynthesizerTest {
 
     @Test
     fun `clicks have short controlled decay`() {
-        for (sound in ClickSynthesizer.Sound.entries) {
+        for (sound in ClickSynthesizer.Sound.entries.filter { it.synthesized }) {
             val c = ClickSynthesizer.synthesize(sound, AccentLevel.STRONG, rate)
             val third = c.size / 3
             val head = rms(c.copyOfRange(0, third))
@@ -70,7 +70,7 @@ class ClickSynthesizerTest {
 
     @Test
     fun `output stays within full scale without clipping`() {
-        for (sound in ClickSynthesizer.Sound.entries) {
+        for (sound in ClickSynthesizer.Sound.entries.filter { it.synthesized }) {
             val c = ClickSynthesizer.synthesize(sound, AccentLevel.STRONG, rate)
             val peak = c.maxOf { abs(it.toInt()) }
             // допуск +1 — округление roundToInt может дать ровно на отсчёт больше
@@ -80,7 +80,7 @@ class ClickSynthesizerTest {
 
     @Test
     fun `sounds are clearly distinguishable by dominant frequency`() {
-        val freqs = ClickSynthesizer.Sound.entries.associateWith {
+        val freqs = ClickSynthesizer.Sound.entries.filter { it.synthesized }.associateWith {
             dominantHz(ClickSynthesizer.synthesize(it, AccentLevel.WEAK, rate))
         }
         val wood = freqs.getValue(ClickSynthesizer.Sound.WOOD)
@@ -93,7 +93,7 @@ class ClickSynthesizerTest {
 
     @Test
     fun `strong accent is pitched higher than weak`() {
-        for (sound in ClickSynthesizer.Sound.entries) {
+        for (sound in ClickSynthesizer.Sound.entries.filter { it.synthesized }) {
             val strongHz = dominantHz(ClickSynthesizer.synthesize(sound, AccentLevel.STRONG, rate))
             val weakHz = dominantHz(ClickSynthesizer.synthesize(sound, AccentLevel.WEAK, rate))
             assertTrue("$sound: strong=$strongHz weak=$weakHz", strongHz > weakHz)
@@ -103,7 +103,7 @@ class ClickSynthesizerTest {
     @Test
     fun `total click length is short`() {
         // даже «низкий» тик должен укладываться в ~120 мс
-        for (sound in ClickSynthesizer.Sound.entries) {
+        for (sound in ClickSynthesizer.Sound.entries.filter { it.synthesized }) {
             val c = ClickSynthesizer.synthesize(sound, AccentLevel.STRONG, rate)
             val ms = c.size * 1000.0 / rate
             assertTrue("$sound длительность ${ms}мс", ms < 120)

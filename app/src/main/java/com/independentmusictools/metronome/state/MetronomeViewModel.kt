@@ -4,7 +4,6 @@ import com.independentmusictools.metronome.audio.ClickSynthesizer
 import com.independentmusictools.metronome.audio.MetronomePlayer
 import com.independentmusictools.metronome.core.TapAverager
 import com.independentmusictools.metronome.core.TempoMath
-import com.independentmusictools.metronome.core.TimeSignature
 import com.independentmusictools.metronome.settings.MetronomeSettings
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -27,7 +26,7 @@ class MetronomeViewModel(
     data class UiState(
         val playing: Boolean = false,
         val bpm: Int = MetronomeSettings.DEFAULT_BPM,
-        val timeSignature: TimeSignature = TimeSignature.DEFAULT,
+        val beatsPerBar: Int = MetronomeSettings.DEFAULT_BEATS,
         val sound: ClickSynthesizer.Sound = ClickSynthesizer.Sound.WOOD,
         val tapCount: Int = 0,
     )
@@ -35,7 +34,7 @@ class MetronomeViewModel(
     private val _state = MutableStateFlow(
         UiState(
             bpm = settings.bpm,
-            timeSignature = settings.timeSignature,
+            beatsPerBar = settings.beatsPerBar,
             sound = settings.sound,
         ),
     )
@@ -51,7 +50,7 @@ class MetronomeViewModel(
     private fun syncPlayer() {
         val s = _state.value
         player.bpm = s.bpm
-        player.timeSignature = s.timeSignature
+        player.beatsPerBar = s.beatsPerBar
         player.sound = s.sound
     }
 
@@ -88,11 +87,15 @@ class MetronomeViewModel(
 
     fun adjustBpm(delta: Int) = setBpm(_state.value.bpm + delta)
 
-    fun setTimeSignature(ts: TimeSignature) {
-        settings.timeSignature = ts
-        player.timeSignature = ts
-        _state.value = _state.value.copy(timeSignature = ts)
+    /** Ударов в такте 1–8; первый удар такта звучит выше. */
+    fun setBeatsPerBar(value: Int) {
+        val v = value.coerceIn(MetronomeSettings.MIN_BEATS_PER_BAR, MetronomeSettings.MAX_BEATS_PER_BAR)
+        settings.beatsPerBar = v
+        player.beatsPerBar = v
+        _state.value = _state.value.copy(beatsPerBar = v)
     }
+
+    fun adjustBeatsPerBar(delta: Int) = setBeatsPerBar(_state.value.beatsPerBar + delta)
 
     /** Выбор звука; preview=true проигрывает пример (сильная + обычная доля). */
     fun selectSound(sound: ClickSynthesizer.Sound, preview: Boolean) {
