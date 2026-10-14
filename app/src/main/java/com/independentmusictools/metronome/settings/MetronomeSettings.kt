@@ -26,18 +26,13 @@ class SharedPrefsPrefs(context: Context) : Prefs {
 
 /**
  * Локальные настройки метронома (только это устройство).
- * Темп, длина тренировочного цикла, размер, звук — независимые настройки,
- * не перезаписывающие друг друга.
+ * Темп, размер, звук — независимые настройки, не перезаписывающие друг друга.
  */
 class MetronomeSettings(private val prefs: Prefs) {
 
     var bpm: Int
         get() = prefs.getInt(KEY_BPM, DEFAULT_BPM).coerceIn(TempoMath.MIN_BPM, TempoMath.MAX_BPM)
         set(value) = prefs.putInt(KEY_BPM, value.coerceIn(TempoMath.MIN_BPM, TempoMath.MAX_BPM))
-
-    var cycleBeats: Int
-        get() = prefs.getInt(KEY_CYCLE, DEFAULT_CYCLE).coerceIn(MIN_CYCLE_BEATS, MAX_CYCLE_BEATS)
-        set(value) = prefs.putInt(KEY_CYCLE, value.coerceIn(MIN_CYCLE_BEATS, MAX_CYCLE_BEATS))
 
     var timeSignature: TimeSignature
         get() = TimeSignature.parse(prefs.getString(KEY_TS, null) ?: TimeSignature.DEFAULT.persistString)
@@ -51,13 +46,9 @@ class MetronomeSettings(private val prefs: Prefs) {
         set(value) = prefs.putString(KEY_SOUND, value.name)
 
     companion object {
-        const val MIN_CYCLE_BEATS = 4
-        const val MAX_CYCLE_BEATS = 36
         const val DEFAULT_BPM = 100
-        const val DEFAULT_CYCLE = 8
 
         private const val KEY_BPM = "bpm"
-        private const val KEY_CYCLE = "cycle_beats"
         private const val KEY_TS = "time_signature"
         private const val KEY_SOUND = "sound"
     }

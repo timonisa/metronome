@@ -24,8 +24,8 @@ class MainActivity : ComponentActivity() {
                 val viewModel = remember {
                     MetronomeViewModel(
                         settings = MetronomeSettings(SharedPrefsPrefs(appContext)),
-                        playerFactory = { onBeat, onInterrupted ->
-                            AudioTrackMetronomePlayer(appContext, onBeat, onInterrupted)
+                        playerFactory = { onInterrupted ->
+                            AudioTrackMetronomePlayer(appContext, onInterrupted)
                         },
                     )
                 }

@@ -8,7 +8,6 @@ import com.independentmusictools.metronome.core.TimeSignature
  */
 interface MetronomePlayer {
     var bpm: Int
-    var cycleBeats: Int
     var timeSignature: TimeSignature
     var sound: ClickSynthesizer.Sound
 

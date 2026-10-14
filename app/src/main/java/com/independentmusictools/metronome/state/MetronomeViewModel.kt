@@ -2,7 +2,6 @@ package com.independentmusictools.metronome.state
 
 import com.independentmusictools.metronome.audio.ClickSynthesizer
 import com.independentmusictools.metronome.audio.MetronomePlayer
-import com.independentmusictools.metronome.core.AccentLevel
 import com.independentmusictools.metronome.core.TapAverager
 import com.independentmusictools.metronome.core.TempoMath
 import com.independentmusictools.metronome.core.TimeSignature
@@ -15,37 +14,34 @@ import kotlinx.coroutines.flow.asStateFlow
  * Состояние и логика метронома. Плеер и tapper инъектируются фабриками —
  * в unit-тестах подменяются фейками, в приложении используется
  * AudioTrackMetronomePlayer с реальным звуком.
+ *
+ * tapCount растёт с каждым тапом по цифрам темпа — UI использует его
+ * как триггер вспышки.
  */
 class MetronomeViewModel(
     private val settings: MetronomeSettings,
-    playerFactory: (
-        onBeat: (positionInCycle: Int, level: AccentLevel) -> Unit,
-        onInterrupted: () -> Unit,
-    ) -> MetronomePlayer,
+    playerFactory: (onInterrupted: () -> Unit) -> MetronomePlayer,
     tapperFactory: () -> TapAverager = { TapAverager() },
 ) {
 
     data class UiState(
         val playing: Boolean = false,
         val bpm: Int = MetronomeSettings.DEFAULT_BPM,
-        val cycleBeats: Int = MetronomeSettings.DEFAULT_CYCLE,
         val timeSignature: TimeSignature = TimeSignature.DEFAULT,
         val sound: ClickSynthesizer.Sound = ClickSynthesizer.Sound.WOOD,
-        val currentBeat: Int? = null,
-        val currentAccent: AccentLevel? = null,
+        val tapCount: Int = 0,
     )
 
     private val _state = MutableStateFlow(
         UiState(
             bpm = settings.bpm,
-            cycleBeats = settings.cycleBeats,
             timeSignature = settings.timeSignature,
             sound = settings.sound,
         ),
     )
     val state: StateFlow<UiState> = _state.asStateFlow()
 
-    private val player: MetronomePlayer = playerFactory(::onBeatInternal, ::onInterruptedInternal)
+    private val player: MetronomePlayer = playerFactory(::onInterruptedInternal)
     private val tapper = tapperFactory()
 
     init {
@@ -55,7 +51,6 @@ class MetronomeViewModel(
     private fun syncPlayer() {
         val s = _state.value
         player.bpm = s.bpm
-        player.cycleBeats = s.cycleBeats
         player.timeSignature = s.timeSignature
         player.sound = s.sound
     }
@@ -77,15 +72,11 @@ class MetronomeViewModel(
     private fun stopPlayback() {
         player.stop()
         tapper.reset()
-        _state.value = _state.value.copy(playing = false, currentBeat = null, currentAccent = null)
-    }
-
-    private fun onBeatInternal(positionInCycle: Int, level: AccentLevel) {
-        _state.value = _state.value.copy(currentBeat = positionInCycle, currentAccent = level)
+        _state.value = _state.value.copy(playing = false)
     }
 
     private fun onInterruptedInternal() {
-        _state.value = _state.value.copy(playing = false, currentBeat = null, currentAccent = null)
+        _state.value = _state.value.copy(playing = false)
     }
 
     fun setBpm(value: Int) {
@@ -96,15 +87,6 @@ class MetronomeViewModel(
     }
 
     fun adjustBpm(delta: Int) = setBpm(_state.value.bpm + delta)
-
-    fun setCycleBeats(value: Int) {
-        val v = value.coerceIn(MetronomeSettings.MIN_CYCLE_BEATS, MetronomeSettings.MAX_CYCLE_BEATS)
-        settings.cycleBeats = v
-        player.cycleBeats = v
-        _state.value = _state.value.copy(cycleBeats = v, currentBeat = null, currentAccent = null)
-    }
-
-    fun adjustCycleBeats(delta: Int) = setCycleBeats(_state.value.cycleBeats + delta)
 
     fun setTimeSignature(ts: TimeSignature) {
         settings.timeSignature = ts
@@ -122,8 +104,12 @@ class MetronomeViewModel(
 
     /** Tap tempo: усреднение интервалов тапов; false — пока недостаточно тапов. */
     fun tapTempo(): Boolean {
-        val bpm = tapper.tap() ?: return false
+        val bpm = tapper.tap() ?: run {
+            _state.value = _state.value.copy(tapCount = _state.value.tapCount + 1)
+            return false
+        }
         setBpm(bpm)
+        _state.value = _state.value.copy(tapCount = _state.value.tapCount + 1)
         return true
     }
 

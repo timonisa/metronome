@@ -1,9 +1,10 @@
 package com.independentmusictools.metronome.ui
 
-import androidx.compose.foundation.Canvas
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -31,11 +32,14 @@ import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
@@ -44,10 +48,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.independentmusictools.metronome.audio.ClickSynthesizer
-import com.independentmusictools.metronome.core.AccentLevel
 import com.independentmusictools.metronome.core.TempoMath
 import com.independentmusictools.metronome.core.TimeSignature
-import com.independentmusictools.metronome.settings.MetronomeSettings
 import com.independentmusictools.metronome.state.MetronomeViewModel
 import com.independentmusictools.metronome.ui.theme.CharcoalMuted
 import com.independentmusictools.metronome.ui.theme.Hairline
@@ -56,12 +58,21 @@ import com.independentmusictools.metronome.ui.theme.Vermilion
 import kotlin.math.roundToInt
 
 /**
- * Главный экран метронома: темп (число, слайдер, шаги, TAP),
- * индикатор долей цикла, размер такта, длина цикла, звук, старт/стоп.
+ * Главный экран метронома: темп (цифры с TAP по нажатию, слайдер, ±5),
+ * размер такта с вариантами группировки, звук, старт/стоп.
  */
 @Composable
 fun MetronomeScreen(viewModel: MetronomeViewModel) {
     val state by viewModel.state.collectAsState()
+
+    // Вспышка цифр темпа при каждом тапе: плавно гаснет от светлого к обычному.
+    val flash = remember { Animatable(0f) }
+    LaunchedEffect(state.tapCount) {
+        if (state.tapCount > 0) {
+            flash.snapTo(1f)
+            flash.animateTo(0f, animationSpec = tween(durationMillis = 250))
+        }
+    }
 
     Surface(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -74,17 +85,35 @@ fun MetronomeScreen(viewModel: MetronomeViewModel) {
             Text("МЕТРОНОМ", style = MaterialTheme.typography.labelSmall, color = CharcoalMuted)
             Spacer(Modifier.height(8.dp))
 
-            // Большой дисплей темпа
+            // Темп: −5 · цифры (TAP по нажатию со вспышкой) · +5
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(20.dp),
+            ) {
+                StepButton("−5") { viewModel.adjustBpm(-5) }
+                Text(
+                    text = "${state.bpm}",
+                    style = TextStyle(
+                        fontSize = 80.sp,
+                        fontWeight = FontWeight.Medium,
+                        fontFeatureSettings = "tnum",
+                    ),
+                    color = lerp(
+                        MaterialTheme.colorScheme.onBackground,
+                        Color.White,
+                        flash.value,
+                    ),
+                    modifier = Modifier
+                        .clickable { viewModel.tapTempo() }
+                        .semantics { contentDescription = "Тап-темпо: нажмите на цифры темпа" },
+                )
+                StepButton("+5") { viewModel.adjustBpm(5) }
+            }
             Text(
-                text = "${state.bpm}",
-                style = TextStyle(
-                    fontSize = 80.sp,
-                    fontWeight = FontWeight.Medium,
-                    fontFeatureSettings = "tnum",
-                ),
-                color = MaterialTheme.colorScheme.onBackground,
+                "BPM · ударов в минуту · тап по цифрам = TAP",
+                style = MaterialTheme.typography.labelSmall,
+                color = CharcoalMuted,
             )
-            Text("BPM · ударов в минуту", style = MaterialTheme.typography.labelSmall, color = CharcoalMuted)
 
             Spacer(Modifier.height(8.dp))
 
@@ -103,35 +132,7 @@ fun MetronomeScreen(viewModel: MetronomeViewModel) {
                 ),
             )
 
-            Spacer(Modifier.height(4.dp))
-
-            // Шаговые кнопки и tap tempo
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                StepButton("−5") { viewModel.adjustBpm(-5) }
-                StepButton("−1") { viewModel.adjustBpm(-1) }
-                StepButton("TAP", wide = true) { viewModel.tapTempo() }
-                StepButton("+1") { viewModel.adjustBpm(1) }
-                StepButton("+5") { viewModel.adjustBpm(5) }
-            }
-
-            Spacer(Modifier.height(24.dp))
-
-            // Индикатор долей тренировочного цикла
-            BeatIndicator(
-                cycleBeats = state.cycleBeats,
-                currentBeat = state.currentBeat,
-                currentAccent = state.currentAccent,
-            )
-            Spacer(Modifier.height(8.dp))
-            val beatLabel = state.currentBeat
-                ?.let { "доля ${it + 1} из ${state.cycleBeats}" }
-                ?: "цикл из ${state.cycleBeats} долей"
-            Text(beatLabel, style = MaterialTheme.typography.labelSmall, color = CharcoalMuted)
-
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(28.dp))
 
             // Размер такта (акцентные группировки)
             LabeledChips(
@@ -158,35 +159,6 @@ fun MetronomeScreen(viewModel: MetronomeViewModel) {
                         ?.let { viewModel.setTimeSignature(it) }
                 }
             }
-
-            Spacer(Modifier.height(16.dp))
-
-            // Длина тренировочного цикла (4–36) — независимая настройка
-            Text("ЦИКЛ ТРЕНИРОВКИ", style = MaterialTheme.typography.labelSmall, color = CharcoalMuted)
-            Spacer(Modifier.height(6.dp))
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                SmallStepButton("−", "Уменьшить длину цикла") { viewModel.adjustCycleBeats(-1) }
-                Text(
-                    text = "${state.cycleBeats}",
-                    style = TextStyle(
-                        fontSize = 28.sp,
-                        fontWeight = FontWeight.Medium,
-                        fontFeatureSettings = "tnum",
-                    ),
-                )
-                SmallStepButton("+", "Увеличить длину цикла") { viewModel.adjustCycleBeats(1) }
-            }
-            Spacer(Modifier.height(6.dp))
-            Text(
-                text = "Размер задаёт группировку акцентов внутри такта.\n" +
-                    "Цикл — сколько долей в тренировочном круге (4–36), независимо от размера.",
-                fontSize = 11.sp,
-                color = CharcoalMuted,
-                textAlign = TextAlign.Center,
-            )
 
             Spacer(Modifier.height(16.dp))
 
@@ -233,79 +205,15 @@ fun MetronomeScreen(viewModel: MetronomeViewModel) {
 }
 
 @Composable
-private fun StepButton(label: String, wide: Boolean = false, onClick: () -> Unit) {
+private fun StepButton(label: String, onClick: () -> Unit) {
     OutlinedButton(
         onClick = onClick,
         modifier = Modifier
-            .widthIn(min = if (wide) 64.dp else 48.dp)
+            .widthIn(min = 52.dp)
             .semantics { contentDescription = "Кнопка $label" },
-        contentPadding = PaddingValues(horizontal = if (wide) 18.dp else 12.dp, vertical = 6.dp),
+        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
     ) {
         Text(label, fontSize = 15.sp, fontWeight = FontWeight.Medium)
-    }
-}
-
-@Composable
-private fun SmallStepButton(symbol: String, description: String, onClick: () -> Unit) {
-    OutlinedButton(
-        onClick = onClick,
-        modifier = Modifier
-            .widthIn(min = 48.dp)
-            .semantics { contentDescription = description },
-        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
-    ) {
-        Text(symbol, fontSize = 18.sp, fontWeight = FontWeight.Medium)
-    }
-}
-
-/**
- * Индикатор долей: точки построчно (до 12 в ряд). Первая доля цикла —
- * крупнее, с кольцом; текущая доля подсвечена (сильный акцент — вермильон).
- */
-@Composable
-private fun BeatIndicator(
-    cycleBeats: Int,
-    currentBeat: Int?,
-    currentAccent: AccentLevel?,
-) {
-    val perRow = 12
-    val rows = (cycleBeats + perRow - 1) / perRow
-    Column(
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        for (r in 0 until rows) {
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                val start = r * perRow
-                val end = minOf(start + perRow, cycleBeats)
-                for (i in start until end) {
-                    val active = currentBeat == i
-                    val dot = if (i == 0) 22.dp else 18.dp
-                    Box(
-                        modifier = Modifier
-                            .size(dot)
-                            .semantics { contentDescription = if (i == 0) "Первая доля" else "Доля ${i + 1}" },
-                    ) {
-                        Canvas(modifier = Modifier.fillMaxSize()) {
-                            val radius = size.minDimension / 2f
-                            when {
-                                active && (currentAccent == AccentLevel.STRONG || i == 0) -> {
-                                    drawCircle(Vermilion.copy(alpha = 0.30f), radius * 1.45f)
-                                    drawCircle(Vermilion, radius)
-                                }
-                                active -> drawCircle(Teal, radius)
-                                i == 0 -> drawCircle(
-                                    Teal.copy(alpha = 0.55f),
-                                    radius,
-                                    style = Stroke(width = 2.dp.toPx()),
-                                )
-                                else -> drawCircle(Hairline, radius * 0.75f)
-                            }
-                        }
-                    }
-                }
-            }
-        }
     }
 }
 

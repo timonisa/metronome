@@ -20,8 +20,6 @@ import com.independentmusictools.metronome.core.TempoMath
 import com.independentmusictools.metronome.core.TimeSignature
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
-import kotlin.math.abs
-import kotlin.math.roundToLong
 
 /**
  * Аудио-движок метронома на AudioTrack (потоковый режим).
@@ -29,11 +27,9 @@ import kotlin.math.roundToLong
  * Тактирование полностью аудио-центрично: аудио-поток заранее
  * (с опережением буфера) готовит окна по ~50 мс, а позиции долей
  * считаются от абсолютного сэмпла с начала воспроизведения —
- * кумулятивного дрейфа нет. Handler.postDelayed используется ТОЛЬКО
- * для визуальной индикации (с компенсацией глубины очереди AudioTrack),
- * не как механизм тактирования.
+ * кумулятивного дрейфа нет.
  *
- * Смена темпа/размера/звука/длины цикла применяется при формировании
+ * Смена темпа/размера/звука применяется при формировании
  * очередного окна — без остановки и щелчков.
  *
  * Обработка прерываний: запрос аудио-фокуса (потеря → остановка),
@@ -41,15 +37,11 @@ import kotlin.math.roundToLong
  */
 class AudioTrackMetronomePlayer(
     @Suppress("unused") private val context: Context,
-    private val onBeat: (positionInCycle: Int, level: AccentLevel) -> Unit,
     private val onInterrupted: () -> Unit,
 ) : MetronomePlayer {
 
     override var bpm: Int = 100
         set(value) { field = value.coerceIn(TempoMath.MIN_BPM, TempoMath.MAX_BPM) }
-
-    override var cycleBeats: Int = 8
-        set(value) { field = value.coerceIn(MetronomePlayerDefaults.MIN_CYCLE_BEATS, MetronomePlayerDefaults.MAX_CYCLE_BEATS) }
 
     override var timeSignature: TimeSignature = TimeSignature.DEFAULT
 
@@ -158,24 +150,14 @@ class AudioTrackMetronomePlayer(
                 SAMPLE_RATE * 60.0 / bpm,
                 4, // параметр beatsPerBar влияет только на флаг PlacedBeat.isDownbeat, движком не используется
             )
-            val cycle = cycleBeats.coerceAtLeast(1)
             val ts = timeSignature
             val snd = sound
+            val bar = ts.numerator
             for (b in placed) {
-                val posInCycle = (b.beatIndex % cycle).toInt()
-                val level = ts.accentAt(posInCycle, cycle)
+                val posInBar = (b.beatIndex % bar).toInt()
+                val level = ts.accentAt(posInBar, bar)
                 val click = clickFor(snd, level)
                 mixer.mix(b.offsetInWindow.toInt(), click)
-                android.util.Log.d(
-                    TAG,
-                    "beat=${b.beatIndex} pos=$posInCycle lvl=$level off=${b.offsetInWindow} clickLen=${click.size} peak=${click.maxOf { abs(it.toInt()) }}",
-                )
-                // Визуальное событие — на момент фактического звучания сэмпла.
-                val delayMs = ((windowStart + b.offsetInWindow - queuedSamples()) * 1000.0 / SAMPLE_RATE)
-                    .roundToLong().coerceIn(0, 5_000)
-                val pos = posInCycle
-                val lv = level
-                mainHandler.postDelayed({ if (running.get()) onBeat(pos, lv) }, delayMs)
             }
             mixer.takeWindow(out)
             var written = 0
@@ -193,12 +175,6 @@ class AudioTrackMetronomePlayer(
                 runCatching { t.play() }
             }
         }
-    }
-
-    /** Глубина очереди AudioTrack в сэмплах (для компенсации задержки UI). */
-    private fun queuedSamples(): Long {
-        val t = track ?: return 0
-        return maxOf(0L, totalWritten.get() - t.playbackHeadPosition.toLong())
     }
 
     private val clickCache = Array(ClickSynthesizer.Sound.entries.size) {
@@ -289,13 +265,7 @@ class AudioTrackMetronomePlayer(
         noisyReceiverRegistered = false
     }
 
-    object MetronomePlayerDefaults {
-        const val MIN_CYCLE_BEATS = 4
-        const val MAX_CYCLE_BEATS = 36
-    }
-
     companion object {
-        private const val TAG = "MetronomeEngine"
         const val SAMPLE_RATE = 44100
 
         /** Окно ~50 мс при 44,1 кГц. */
