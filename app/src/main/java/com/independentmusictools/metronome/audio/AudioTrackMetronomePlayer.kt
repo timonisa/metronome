@@ -132,20 +132,51 @@ class AudioTrackMetronomePlayer(
         }, "metronome-preview").start()
     }
 
-    /** Один обычный щелчок текущего звука — отклик на тап по цифрам темпа. */
+    /**
+     * Один обычный щелчок текущего звука — отклик на тап по цифрам темпа.
+     *
+     * Трек для тапов создаётся один раз и остаётся «прогретым» (play()
+     * в режиме потока): щелчок звучит почти мгновенно — создание трека
+     * на каждый тап давало заметную задержку.
+     */
     override fun tapClick() {
         Thread({
             val click = clickFor(sound, AccentLevel.WEAK)
-            val t = buildTrack()
-            runCatching {
-                t.write(click, 0, click.size)
-                t.play()
-                val durMs = click.size * 1000L / SAMPLE_RATE + 200
-                mainHandler.postDelayed({
-                    runCatching { t.stop(); t.release() }
-                }, durMs)
-            }
+            runCatching { tapTrack().write(click, 0, click.size) }
         }, "metronome-tap").start()
+    }
+
+    private var tapTrack: AudioTrack? = null
+
+    @Synchronized
+    private fun tapTrack(): AudioTrack {
+        tapTrack?.let { if (it.state == AudioTrack.STATE_INITIALIZED) return it }
+        val minBuf = AudioTrack.getMinBufferSize(
+            SAMPLE_RATE, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT,
+        )
+        val builder = AudioTrack.Builder()
+            .setAudioAttributes(
+                AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_MEDIA)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .build(),
+            )
+            .setAudioFormat(
+                AudioFormat.Builder()
+                    .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+                    .setSampleRate(SAMPLE_RATE)
+                    .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
+                    .build(),
+            )
+            .setTransferMode(AudioTrack.MODE_STREAM)
+            .setBufferSizeInBytes(minBuf)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            builder.setPerformanceMode(AudioTrack.PERFORMANCE_MODE_LOW_LATENCY)
+        }
+        return builder.build().also {
+            tapTrack = it
+            it.play()
+        }
     }
 
     /**
