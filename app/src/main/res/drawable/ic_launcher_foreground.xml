@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Форграунд иконки: буква «A» как корпус механического метронома
+     (ножки + перекладина + основание, бирюза) со стрелкой-маятником,
+     качнувшейся вправо (вермильон). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Ножки «A» -->
+    <path
+        android:pathData="M40,73 L54,33 L68,73"
+        android:strokeColor="#2F6B6A"
+        android:strokeWidth="8"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:fillColor="#00000000" />
+
+    <!-- Перекладина «A» -->
+    <path
+        android:pathData="M45,60 L63,60"
+        android:strokeColor="#2F6B6A"
+        android:strokeWidth="6"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000" />
+
+    <!-- Основание метронома -->
+    <path
+        android:pathData="M37,77 L71,77"
+        android:strokeColor="#2F6B6A"
+        android:strokeWidth="8"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000" />
+
+    <!-- Маятник -->
+    <path
+        android:pathData="M54,47 L61,59"
+        android:strokeColor="#C8452C"
+        android:strokeWidth="5"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000" />
+
+    <!-- Наконечник стрелки -->
+    <path
+        android:pathData="M65,64 L55.7,58.2 L63.2,53.2 Z"
+        android:fillColor="#C8452C" />
+</vector>
