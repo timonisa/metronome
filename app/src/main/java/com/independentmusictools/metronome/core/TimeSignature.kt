@@ -23,6 +23,15 @@ data class TimeSignature(
 
     val label: String = "$numerator/$denominator"
 
+    /** Вариант группировки в читаемом виде, например "3+2". */
+    val variantLabel: String = groups.joinToString("+")
+
+    /**
+     * Ключ для сохранения: "5/4|3+2". Устаревший формат без "|..." тоже
+     * принимается parse() и даёт каноническую группировку.
+     */
+    val persistString: String = "$label|$variantLabel"
+
     /** Начальные позиции групп внутри такта (0 — всегда сильная доля). */
     private val groupStarts: Set<Int> = buildSet {
         var acc = 0
@@ -69,18 +78,47 @@ data class TimeSignature(
         val DEFAULT = FOUR_FOUR
 
         /**
-         * Разбор текста вида "6/8". Для известного размера возвращается
-         * каноническая группировка; для прочих валидных — документированный
-         * стандарт по умолчанию: кратные тройке восьмые группируются по 3,
-         * всё остальное — одна группа на весь такт.
+         * Альтернативные акцентные группировки предустановленных размеров.
+         * Канонический вариант — первый в списке; он же результат parse()
+         * без суффикса групп.
+         */
+        private val PRESET_VARIANTS: Map<String, List<List<Int>>> = mapOf(
+            "5/4" to listOf(listOf(3, 2), listOf(2, 3)),
+            "5/8" to listOf(listOf(2, 3), listOf(3, 2)),
+            "7/8" to listOf(listOf(2, 2, 3), listOf(2, 3, 2), listOf(3, 2, 2)),
+        )
+
+        /**
+         * Все варианты группировок размера [numerator]/[denominator].
+         * Для предустановленных размеров без альтернатив и для неизвестных —
+         * один вариант (канонический/дефолтный).
+         */
+        fun variantsFor(numerator: Int, denominator: Int): List<TimeSignature> {
+            val canonical = parse("$numerator/$denominator") ?: return emptyList()
+            val groupsList = PRESET_VARIANTS[canonical.label] ?: listOf(canonical.groups)
+            return groupsList.map { canonical.copy(groups = it) }
+        }
+
+        /**
+         * Разбор текста вида "6/8" или "5/4|3+2". Без суффикса групп для
+         * известного размера возвращается каноническая группировка; для прочих
+         * валидных — документированный стандарт по умолчанию: кратные тройке
+         * восьмые группируются по 3, всё остальное — одна группа на весь такт.
+         * С суффиксом — указанная группировка (валидируется конструктором).
          */
         fun parse(text: String): TimeSignature? {
-            val m = Regex("^(\\d+)/(\\d+)$").find(text.trim()) ?: return null
+            val m = Regex("^(\\d+)/(\\d+)(?:\\|([0-9+]+))?$").find(text.trim()) ?: return null
             val n = m.groupValues[1].toIntOrNull() ?: return null
             val d = m.groupValues[2].toIntOrNull() ?: return null
             if (n !in 1..32 || d !in 1..64) return null
-            return ALL.firstOrNull { it.numerator == n && it.denominator == d }
-                ?: defaultFor(n, d)
+            val groupsText = m.groupValues[3]
+            if (groupsText.isEmpty()) {
+                return ALL.firstOrNull { it.numerator == n && it.denominator == d }
+                    ?: defaultFor(n, d)
+            }
+            val groups = groupsText.split('+').mapNotNull { it.toIntOrNull() }
+            if (groups.size != groupsText.count { it == '+' } + 1) return null
+            return runCatching { TimeSignature(n, d, groups) }.getOrNull()
         }
 
         fun defaultFor(numerator: Int, denominator: Int): TimeSignature =

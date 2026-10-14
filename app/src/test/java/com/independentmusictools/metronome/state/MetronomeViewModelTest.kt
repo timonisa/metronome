@@ -173,6 +173,19 @@ class MetronomeViewModelTest {
     }
 
     @Test
+    fun `time signature variant persists and reaches the player`() {
+        val fake = FakePlayer()
+        val prefs = MapPrefs()
+        val vm = viewModel(fake, prefs)
+        val variant = TimeSignature.parse("5/4|2+3")!!
+        vm.setTimeSignature(variant)
+        assertEquals(variant, vm.state.value.timeSignature)
+        assertEquals(variant, fake.timeSignature)
+        // Новая VM с теми же настройками восстанавливает именно вариант
+        assertEquals(variant, viewModel(FakePlayer(), prefs).state.value.timeSignature)
+    }
+
+    @Test
     fun `sound selection persists and preview is played`() {
         val fake = FakePlayer()
         val prefs = MapPrefs()

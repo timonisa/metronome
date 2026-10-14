@@ -142,6 +142,23 @@ fun MetronomeScreen(viewModel: MetronomeViewModel) {
                 TimeSignature.parse(label)?.let { viewModel.setTimeSignature(it) }
             }
 
+            // Вариант группировки — только если у размера есть альтернативы
+            val variants = TimeSignature.variantsFor(
+                state.timeSignature.numerator,
+                state.timeSignature.denominator,
+            )
+            if (variants.size > 1) {
+                Spacer(Modifier.height(10.dp))
+                LabeledChips(
+                    label = "ГРУППИРОВКА · порядок долей",
+                    options = variants.map { it.variantLabel },
+                    selected = state.timeSignature.variantLabel,
+                ) { variant ->
+                    variants.firstOrNull { it.variantLabel == variant }
+                        ?.let { viewModel.setTimeSignature(it) }
+                }
+            }
+
             Spacer(Modifier.height(16.dp))
 
             // Длина тренировочного цикла (4–36) — независимая настройка

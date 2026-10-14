@@ -40,9 +40,9 @@ class MetronomeSettings(private val prefs: Prefs) {
         set(value) = prefs.putInt(KEY_CYCLE, value.coerceIn(MIN_CYCLE_BEATS, MAX_CYCLE_BEATS))
 
     var timeSignature: TimeSignature
-        get() = TimeSignature.parse(prefs.getString(KEY_TS, null) ?: TimeSignature.DEFAULT.label)
+        get() = TimeSignature.parse(prefs.getString(KEY_TS, null) ?: TimeSignature.DEFAULT.persistString)
             ?: TimeSignature.DEFAULT
-        set(value) = prefs.putString(KEY_TS, value.label)
+        set(value) = prefs.putString(KEY_TS, value.persistString)
 
     var sound: ClickSynthesizer.Sound
         get() = prefs.getString(KEY_SOUND, null)

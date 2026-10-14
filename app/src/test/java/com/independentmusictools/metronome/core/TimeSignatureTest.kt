@@ -127,6 +127,59 @@ class TimeSignatureTest {
         assertTrue(ts.groups == listOf(3, 2))
     }
 
+    @Test
+    fun `five four has two variants with distinct accents`() {
+        val variants = TimeSignature.variantsFor(5, 4)
+        assertEquals(2, variants.size)
+        assertEquals(listOf(3, 2), variants[0].groups)
+        assertEquals(listOf(2, 3), variants[1].groups)
+
+        // 5/4 = [2,3]: сильная 1, средняя 3
+        val ts = variants[1]
+        assertEquals(AccentLevel.STRONG, ts.accentAt(0, 5))
+        assertEquals(AccentLevel.MEDIUM, ts.accentAt(2, 5))
+        assertEquals(AccentLevel.WEAK, ts.accentAt(3, 5))
+    }
+
+    @Test
+    fun `seven eight has three variants`() {
+        val variants = TimeSignature.variantsFor(7, 8)
+        assertEquals(listOf(listOf(2, 2, 3), listOf(2, 3, 2), listOf(3, 2, 2)), variants.map { it.groups })
+        // 7/8 = [3,2,2]: сильная 1, средние 4 и 6
+        val ts = variants[2]
+        assertEquals(AccentLevel.MEDIUM, ts.accentAt(3, 7))
+        assertEquals(AccentLevel.MEDIUM, ts.accentAt(5, 7))
+    }
+
+    @Test
+    fun `sizes without alternatives expose single variant`() {
+        assertEquals(1, TimeSignature.variantsFor(4, 4).size)
+        assertEquals(listOf(TimeSignature.FOUR_FOUR), TimeSignature.variantsFor(4, 4))
+        // неизвестный размер — дефолтная группировка
+        assertEquals(1, TimeSignature.variantsFor(11, 8).size)
+        assertTrue(TimeSignature.variantsFor(0, 4).isEmpty())
+    }
+
+    @Test
+    fun `parse accepts explicit groups and roundtrips persistString`() {
+        val ts = TimeSignature.parse("5/4|2+3")
+        assertEquals(TimeSignature(5, 4, listOf(2, 3)), ts)
+        assertEquals(ts, TimeSignature.parse(ts!!.persistString))
+        assertEquals(ts, TimeSignature.parse(" " + ts.persistString + " "))
+
+        // Устаревший формат без групп — канонический вариант
+        assertEquals(TimeSignature.FIVE_FOUR, TimeSignature.parse("5/4"))
+    }
+
+    @Test
+    fun `parse rejects malformed or invalid groups`() {
+        assertNull(TimeSignature.parse("5/4|2+4")) // сумма != numerator
+        assertNull(TimeSignature.parse("5/4|2+")) // пустая группа
+        assertNull(TimeSignature.parse("5/4|0+5")) // неположительная группа
+        assertNull(TimeSignature.parse("5/4|x")) // не цифры
+        assertNull(TimeSignature.parse("4/4|2")) // сумма меньше numerator
+    }
+
     @Test(expected = IllegalArgumentException::class)
     fun `groups must sum to numerator`() {
         TimeSignature(4, 4, listOf(2, 3))
