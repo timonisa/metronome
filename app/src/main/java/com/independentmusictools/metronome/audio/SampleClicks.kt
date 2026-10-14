@@ -12,13 +12,19 @@ import java.nio.ByteOrder
  * из res/raw (около 90 мс, CC0: Wikimedia Commons «Metronome 60bpm.wav»,
  * вырезан один удар). Загружается один раз и кешируется.
  *
- * Сильная доля — тот же сэмпл, поднятый по высоте (ресемплинг ×1.18) и
- * чуть громче: «на первый удар — выше звук».
+ * Сэмпл поднят по высоте ресемплингом (×1.40): запись на 60 BPM звучит
+ * слишком басовито для щелчка. Сильная доля — ещё выше (×1.65) и
+ * громче: «на первый удар — выше звук».
  */
 object SampleClicks {
 
     private const val RATE = 44100
-    private const val PITCH_UP = 1.18
+
+    /** Базовое повышение тона: запись на 60 BPM звучит басовито. */
+    private const val WEAK_PITCH = 1.40
+
+    /** Сильная доля — ещё выше обычной, «первый удар — выше звуком». */
+    private const val STRONG_PITCH = WEAK_PITCH * 1.18
 
     private var weakCache: ShortArray? = null
     private var strongCache: ShortArray? = null
@@ -27,8 +33,8 @@ object SampleClicks {
     fun click(context: Context, level: AccentLevel): ShortArray {
         if (weakCache == null) {
             val raw = loadWavPcm16(context.resources.openRawResource(R.raw.mech_click).readBytes())
-            weakCache = normalize(raw, peakTarget = 0.78)
-            strongCache = normalize(resample(raw, PITCH_UP), peakTarget = 0.92)
+            weakCache = normalize(resample(raw, WEAK_PITCH), peakTarget = 0.78)
+            strongCache = normalize(resample(raw, STRONG_PITCH), peakTarget = 0.92)
         }
         return if (level == AccentLevel.STRONG) strongCache!! else weakCache!!
     }
